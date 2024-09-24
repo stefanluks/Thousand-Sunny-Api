@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
-const UserBanco = require("/etc/secrets/user-db.json");
-// const UserBanco = require("../user-db.json");
+// const UserBanco = require("/etc/secrets/user-db.json");
+const UserBanco = require("../user-db.json");
 
 //Criando a instância do Sequelize que recebe as informações do banco para realizar a conexão
 const banco = new Sequelize(UserBanco.nome, UserBanco.usuario, UserBanco.senha, {

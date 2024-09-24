@@ -54,7 +54,7 @@ const rotas = [
             let jogo = await Jogo.findOne({attributes: ["id", "nome", "descricao"], where: {id: id_recebido}});
             if(jogo){
                 let rankings = await Jogador.findAll({
-                    attributes: ["id","nome","descricao"],
+                    attributes: ["id","nome","pontos", "jogo"],
                     where: {jogo: id_recebido},
                     order: [["pontos", "DESC"]]
                 });
