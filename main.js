@@ -22,6 +22,6 @@ rotas.forEach(rota=>{
     if(rota.tipo == "post") app.post(rota.url, rota.func);
 })
 
-app.listen(8080, () => {
+app.listen(8000, () => {
     console.log("Servidor on-line...");
 })

@@ -1,10 +1,14 @@
 const Jogador = require("../modelos/Jogador");
 const Jogo = require("../modelos/Jogo");
+const Usuario = require("../modelos/Usuario");
+const useBcrypt = require("sequelize-bcrypt");
+const CA = require("../admin-codigo.js");
 
 const rotas = [
     {
         tipo: "get",
         url: "/jogos",
+        info: "Retorna uma lista com todos os jogos cadastrados!",
         func: async (req,res) =>{
             return res.json({
                 error: false,
@@ -14,6 +18,7 @@ const rotas = [
     },{
         tipo: "post",
         url: "/jogos",
+        info: `Adicionar um novo jogo. <br> <b>JSON:</b> <br>{<br>&nbsp;&nbsp;<b class='text-primary'>nome:</b><b class='text-success'>"nome do jogo"</b>,<br>&nbsp;&nbsp;<b class="text-primary">descricao:</b><b class="text-success">"descrição do jogo"</b><br>}`,
         func: async (req,res) =>{
             let dados = req.body;
             let jogo = await Jogo.findOne({
@@ -45,10 +50,11 @@ const rotas = [
                     mensage: "Erro: não foi possivel cadastrar Jogo!",
                 })
             });
-        }
+        }   
     },{
         tipo: "get",
         url: "/rankingGeral/:id",
+        info: "Buscar o ranking de um determinado jogo pelo seu ID, basta colocar o número do id como parâmetro na url.",
         func: async (req,res) =>{
             let id_recebido = req.params.id;
             let jogo = await Jogo.findOne({attributes: ["id", "nome", "descricao"], where: {id: id_recebido}});
@@ -78,6 +84,7 @@ const rotas = [
     },{
         tipo: "post",
         url: "/jogador",
+        info: `Adicionar um novo jogador. <br> <b>JSON:</b> <br>{<br>&nbsp;&nbsp;<b class='text-primary'>nome:</b><b class='text-success'>"nome do jogador"</b>,<br>&nbsp;&nbsp;<b class="text-primary">pontos:</b><b class="text-warning"> 0000</b><br><b class="text-primary">jogo:</b><b class="text-warning"> {id do jogo}</b><br>}`,
         func: async (req,res) =>{
             let dados = req.body;
             console.log(dados);
@@ -126,18 +133,87 @@ const rotas = [
     },{
         tipo: "get",
         url: "/rotas",
+        info: "Retorna todas as rotas da API e suas especificações e informações!",
         func: (req, res) => {
             let lista = [];
             rotas.forEach(rota => {
-                let url = rota.url.split("/")[1];
+                let urlmake = rota.url.split("/");
+                let url = urlmake[1];
+                if(urlmake.length == 3) url= urlmake[1]+"/"+urlmake[2];
                 lista.push({
                     tipo: rota.tipo,
-                    url: url
+                    url: url,
+                    info: rota.info
                 })
             })
             return res.json({
                 error: false,
                 content: lista
+            })
+        }
+    },{
+        tipo: "get",
+        url: "/login",
+        info: "Para realizar a Autenticação de um usuario use com ?user={username}&senha={senha do usuario}",
+        func: async (req,res) =>{
+            let dados = req.query;
+            const user = await Usuario.findOne({where: {username: dados.user}});
+            if(user.authenticate(dados.senha)){
+                return res.json({
+                    error: false,
+                    content: {
+                        autenticado: true,
+                        msg: "Credenciais Corretas!",
+                    }
+                })
+            }
+            return res.json({
+                error: true,
+                content: {
+                    autenticado: false,
+                    msg: "Credenciais Incorretas!",
+                }
+            })
+        }
+    },{
+        tipo: "post",
+        url: "/usuario",
+        info: "Cadastrar Um novo Usuario",
+        func: async (req,res) =>{
+            let dados = req.body;
+            console.log(dados);
+            if(CA.Comparar(dados.adminCodigo)){
+                const user = await Usuario.findOne({where: {username: dados.user}});
+                if(user){
+                    return res.json({
+                        error: true,
+                        content: {
+                            msg: "Úsuario Já Existe!",
+                        }
+                    })
+                }
+                const usuario = Usuario.create({
+                    username: dados.username,
+                    password: dados.senha,
+                    codigo: CA.GerarCodigoUser()
+                }).then(() => {
+                    return res.json({
+                        error: false,
+                        content: {
+                            usuario,
+                            msg: "Úsuario cadastrado com sucesso!",
+                        }
+                    })
+                }).catch(err => {
+                    return res.json({
+                        error: true,
+                        content: {msg: "Não foi possivel cadastrar o Usuario"}
+                    })
+                });
+            }
+            return res.json({
+                error: true,
+                content: {msg: "Você não tem autorização para adicionar um novo usuario"}
             })
         }
     }

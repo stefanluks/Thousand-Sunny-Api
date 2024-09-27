@@ -3,6 +3,7 @@
 teste.py
 package-lock.json
 user-db.json
+admin-codigo.json
 
 # dependencies
 /node_modules
