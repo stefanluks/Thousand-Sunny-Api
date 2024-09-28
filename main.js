@@ -1,13 +1,7 @@
 const express = require("express");
 const path = require("path");
 const app = express();
-const cors = require("cors");
 
-const corsOptions = {
-  origin: "http://localhost:8080",
-};
-
-app.use(cors(corsOptions));
 app.use(express.json());
 
 const rotas = require("./config/rotas");

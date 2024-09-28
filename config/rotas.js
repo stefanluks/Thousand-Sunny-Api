@@ -4,6 +4,28 @@ const Usuario = require("../modelos/Usuario");
 const useBcrypt = require("sequelize-bcrypt");
 const CA = require("../admin-codigo.js");
 
+function Ordenar(lista){
+    let saida = [];
+    let maiorPonto = 0;
+    let maior = null;
+    let id = null;
+
+    while(lista.length > 0){
+        lista.forEach((jogador, index) => { if(parseInt(jogador.pontos) > maiorPonto){
+            maiorPonto = parseInt(jogador.pontos);
+            maior = jogador;
+            id = index;
+        }});
+        saida.push(maior);
+        lista.splice(id, 1);
+        maior = null;
+        id = null;
+        maiorPonto = 0;
+    }
+
+    return saida;
+}
+
 const rotas = [
     {
         tipo: "get",
@@ -70,7 +92,7 @@ const rotas = [
                         id: jogo.id,
                         nome: jogo.nome,
                         descricao: jogo.descricao,
-                        ranking: rankings
+                        ranking: Ordenar(rankings),
                     }
                 });
             }
@@ -87,7 +109,6 @@ const rotas = [
         info: `Adicionar um novo jogador. <br> <b>JSON:</b> <br>{<br>&nbsp;&nbsp;<b class='text-primary'>nome:</b><b class='text-success'>"nome do jogador"</b>,<br>&nbsp;&nbsp;<b class="text-primary">pontos:</b><b class="text-warning"> 0000</b><br><b class="text-primary">jogo:</b><b class="text-warning"> {id do jogo}</b><br>}`,
         func: async (req,res) =>{
             let dados = req.body;
-            console.log(dados);
             let jogador = await Jogador.findOne({
                 attributes: ["id", "nome", "pontos", "jogo"],
                 where: {nome: dados.nome, jogo: dados.jogo}
