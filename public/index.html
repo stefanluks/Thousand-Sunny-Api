@@ -33,7 +33,6 @@
             fetch(window.location.href+"rotas").then(data => {return data.json()}).then(json => {
                 let listaHTML = document.getElementById("links");
                 if(!json.error) json.content.forEach(rota => {
-                    console.log(rota)
                     let cor = "text-dark";
                     if(rota.tipo == "post") cor = "text-light";
                     listaHTML.innerHTML += `

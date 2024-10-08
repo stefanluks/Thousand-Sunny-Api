@@ -43,35 +43,47 @@ const rotas = [
         info: `Adicionar um novo jogo. <br> <b>JSON:</b> <br>{<br>&nbsp;&nbsp;<b class='text-primary'>nome:</b><b class='text-success'>"nome do jogo"</b>,<br>&nbsp;&nbsp;<b class="text-primary">descricao:</b><b class="text-success">"descrição do jogo"</b><br>}`,
         func: async (req,res) =>{
             let dados = req.body;
-            let jogo = await Jogo.findOne({
-                attributes:["id","nome","descricao"],
-                where:{
-                    nome: dados.nome
-                }
-            });
-            if(jogo){
-                return res.json({
-                    error: true,
-                    content: {
-                        msg:"Jogo com esse nome já existe!",
+            if(CA.CheckCodigoUser(dados.token)){
+                let jogo = await Jogo.findOne({
+                    attributes:["id","nome","descricao"],
+                    where:{
+                        nome: dados.nome
                     }
                 });
+                if(jogo){
+                    return res.json({
+                        error: true,
+                        content: {
+                            msg:"Jogo com esse nome já existe!",
+                        }
+                    });
+                }
+                let novo_jogo = {
+                    nome: dados.nome,
+                    descricao: dados.descricao
+                }
+                await Jogo.create(novo_jogo).then(()=>{
+                    // Caso não haja erro o sistema retorna o json informando que não houve erro e a mensagem de cadastrado com sucesso.
+                    return res.json({
+                        error: false,
+                        content:{
+                            msg: "cadastrado com sucesso!",
+                        }
+                    })
+                }).catch(()=>{
+                    // Caso haja algum erro o sistema returna o json com erro e a mensafem de que não foi cadastrado.
+                    return res.status(400).json({
+                        erro: true,
+                        mensage: "Erro: não foi possivel cadastrar Jogo!",
+                    })
+                });
             }
-            await Jogo.create(dados).then(()=>{
-                // Caso não haja erro o sistema retorna o json informando que não houve erro e a mensagem de cadastrado com sucesso.
-                return res.json({
-                    error: false,
-                    content:{
-                        msg: "cadastrado com sucesso!",
-                    }
-                })
-            }).catch(()=>{
-                // Caso haja algum erro o sistema returna o json com erro e a mensafem de que não foi cadastrado.
-                return res.status(400).json({
-                    erro: true,
-                    mensage: "Erro: não foi possivel cadastrar Jogo!",
-                })
-            });
+            return res.json({
+                error: true,
+                content:{
+                    msg: "Erro: Para adicionar um jogo é necessario um token de autenticação de úsuarios cadastrados!",
+                }
+            })
         }   
     },{
         tipo: "get",
@@ -106,50 +118,58 @@ const rotas = [
     },{
         tipo: "post",
         url: "/jogador",
-        info: `Adicionar um novo jogador. <br> <b>JSON:</b> <br>{<br>&nbsp;&nbsp;<b class='text-primary'>nome:</b><b class='text-success'>"nome do jogador"</b>,<br>&nbsp;&nbsp;<b class="text-primary">pontos:</b><b class="text-warning"> 0000</b><br><b class="text-primary">jogo:</b><b class="text-warning"> {id do jogo}</b><br>}`,
+        info: `Adicionar um novo jogador. <br> <b>JSON:</b> <br>{<br>&nbsp;&nbsp;<b class='text-primary'>nome:</b><b class='text-success'>"nome do jogador"</b>,<br>&nbsp;&nbsp;<b class="text-primary">pontos:</b><b class="text-warning"> 0000</b>,<br>&nbsp;&nbsp;<b class="text-primary">jogo:</b><b class="text-warning"> {id do jogo}</b><br>}`,
         func: async (req,res) =>{
             let dados = req.body;
-            let jogador = await Jogador.findOne({
-                attributes: ["id", "nome", "pontos", "jogo"],
-                where: {nome: dados.nome, jogo: dados.jogo}
-            });
+            if(CA.CheckCodigoUser(dados.token)){
+                let jogador = await Jogador.findOne({
+                    attributes: ["id", "nome", "pontos", "jogo"],
+                    where: {nome: dados.nome, jogo: dados.jogo}
+                });
 
-            if(jogador){
-                if(jogador.pontos < dados.pontos){
-                    await Jogador.update(
-                        {pontos: dados.pontos},
-                        {where: {nome: jogador.nome, jogo: jogador.jogo}}
-                    ).then(() => {
+                if(jogador){
+                    if(jogador.pontos < dados.pontos){
+                        await Jogador.update(
+                            {pontos: dados.pontos},
+                            {where: {nome: jogador.nome, jogo: jogador.jogo}}
+                        ).then(() => {
+                            return res.json({
+                                error: false,
+                                content: {
+                                    jogador,
+                                    msg: "Pontuação Atualizada!"
+                                }
+                            });
+                        }).catch(() => {
+                            return res.json({
+                                error: true, 
+                                content: {
+                                    msg: "Erro, não foi possivel atualizar a pontuação!"
+                                }
+                            });
+                        })
+                    }
+                }else{
+                    await Jogador.create({nome: dados.nome, jogo: dados.jogo, pontos: dados.pontos}).then(() => {
                         return res.json({
                             error: false,
-                            content: {
-                                jogador,
-                                msg: "Pontuação Atualizada!"
-                            }
+                            msg: "Jogador cadastrado!"
                         });
-                    }).catch(() => {
-                        return res.json({
-                            error: true, 
-                            content: {
-                                msg: "Erro, não foi possivel atualizar a pontuação!"
-                            }
-                        });
+                    }).catch((err) => {
+                        console.log(err);
+                        return res.status(400).json({
+                            erro: true,
+                            mensage: "Erro: não foi possivel cadastrar Jogo!",
+                        })
                     })
                 }
-            }else{
-                await Jogador.create({nome: dados.nome, jogo: dados.jogo, pontos: dados.pontos}).then(() => {
-                    return res.json({
-                        error: false,
-                        msg: "Jogador cadastrado!"
-                    });
-                }).catch((err) => {
-                    console.log(err);
-                    return res.status(400).json({
-                        erro: true,
-                        mensage: "Erro: não foi possivel cadastrar Jogo!",
-                    })
-                })
             }
+            return res.json({
+                error: true,
+                content:{
+                    msg: "Erro: Para adicionar um jogo é necessario um token de autenticação de úsuarios cadastrados!",
+                }
+            })
         }
     },{
         tipo: "get",
@@ -184,6 +204,7 @@ const rotas = [
                     error: false,
                     content: {
                         autenticado: true,
+                        token: user.codigo,
                         msg: "Credenciais Corretas!",
                     }
                 })
@@ -204,7 +225,8 @@ const rotas = [
             let dados = req.body;
             console.log(dados);
             if(CA.Comparar(dados.adminCodigo)){
-                const user = await Usuario.findOne({where: {username: dados.user}});
+                console.log("COMPARADO!!")
+                const user = await Usuario.findOne({where: {username: dados.username}});
                 if(user){
                     return res.json({
                         error: true,
@@ -213,11 +235,13 @@ const rotas = [
                         }
                     })
                 }
-                const usuario = Usuario.create({
+                let new_user = {
                     username: dados.username,
-                    password: dados.senha,
+                    password: dados.password,
                     codigo: CA.GerarCodigoUser()
-                }).then(() => {
+                }
+                console.log(new_user);
+                const usuario = Usuario.create(new_user).then(() => {
                     return res.json({
                         error: false,
                         content: {
